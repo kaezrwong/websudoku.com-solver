@@ -1,73 +1,92 @@
 import pyautogui as pag
 import time
 
+# Allow time to switch to sudoku browser window
 time.sleep(2)
 
-topLeftX = 1417
-topLeftY = 689
-botRightX = 2162
-botRightY = 1439
+# Pixel locations of top left and bottom right vertices
+# of the sudoku. Found using findPixelBounds.py
+topLeftX = 1418
+topLeftY = 642
+botRightX = 2159
+botRightY = 1388
 
+# Calculations for widths and heights of individual
+# sudoku cells.
 cellPixelWidth = (botRightX-topLeftX)/9
 cellPixelHeight = (botRightY-topLeftY)/9
 
-board = [
-    [0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0]
-]
+# Clears the internal sudoku board
+def clearBoard(board):
+    board = [
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0]
+    ]
+    return board
 
+# Given an x coordinate, returns the corresponding
+# column index in internal sudoku board
 def findColumn(x):
     for i in range (1,10):
         if x < topLeftX + i*cellPixelWidth:
             return i-1
     return 8
 
-def findRow(x):
+# Given a y coordinate, returns the corresponding
+# row index in internal sudoku board
+def findRow(y):
     for i in range (1,10):
-        if x < topLeftY + i*cellPixelHeight:
+        if y < topLeftY + i*cellPixelHeight:
             return i-1
     return 8
 
-for pos in pag.locateAllOnScreen("Number_icons/1.png"):
-    board[findRow(pos[1])][findColumn(pos[0])] = 1
+# Finds the button to generate a new sudoku and clicks it
+def newSudoku():
+    pos = None
+    while pos == None:
+        pos = pag.locateOnScreen("Button_icons/newPuzzle.png")
+        if pos == None:
+            pos = pag.locateOnScreen("Button_icons/newPuzzle2.png")
+    pag.click(pos)
 
-for pos in pag.locateAllOnScreen("Number_icons/2.png"):
-    board[findRow(pos[1])][findColumn(pos[0])] = 2
+    return 0
 
-for pos in pag.locateAllOnScreen("Number_icons/3.png"):
-    board[findRow(pos[1])][findColumn(pos[0])] = 3
+# Finds the button to finish sudoku and clicks it
+def finishSudoku():
+    pos = pag.locateCenterOnScreen("Button_icons/finishPuzzle.png")
+    pag.click(pos)
+    return 0
 
-for pos in pag.locateAllOnScreen("Number_icons/4.png"):
-    board[findRow(pos[1])][findColumn(pos[0])] = 4
+# Reads in sudoku board from web browser and fills
+# in internal sudoku board
+def readInSudoku(board):
+    # Check if page is loaded
+    while (pag.locateOnScreen("Number_icons/1.png") == None):
+        if pag.locateOnScreen("Number_icons/2.png") != None:
+            break
+        time.sleep(0.1)
 
-for pos in pag.locateAllOnScreen("Number_icons/5.png"):
-    board[findRow(pos[1])][findColumn(pos[0])] = 5
+    for i in range (1, 10):
+        for pos in pag.locateAllOnScreen("Number_icons/"+str(i)+".png"):
+            board[findRow(pos[1])][findColumn(pos[0])] = i
+    return board
 
-for pos in pag.locateAllOnScreen("Number_icons/6.png"):
-    board[findRow(pos[1])][findColumn(pos[0])] = 6
-
-for pos in pag.locateAllOnScreen("Number_icons/7.png"):
-    board[findRow(pos[1])][findColumn(pos[0])] = 7
-
-for pos in pag.locateAllOnScreen("Number_icons/8.png"):
-    board[findRow(pos[1])][findColumn(pos[0])] = 8
-
-for pos in pag.locateAllOnScreen("Number_icons/9.png"):
-    board[findRow(pos[1])][findColumn(pos[0])] = 9  
-
+# Fills sudoku board from web browser with values
+# from internal sudoku board
 def fillWebCells(board):
     for i in range(0,9):
         for j in range(0,9):
             pag.click(topLeftX + (i+1/2)*cellPixelWidth, topLeftY + (j+1/2)*cellPixelHeight)
             pag.press(str(board[j][i]))
 
+# Solves internal sudoku board via backtracking
 def solve(board):
 
     find = find_empty(board)
@@ -87,6 +106,10 @@ def solve(board):
     
     return False
 
+# Given a sudoku board, valid places a number (1-9)
+# at a position in the board and returns whether it
+# is valid (no contradictions in the row, column or
+# 3x3 box)
 def valid(board, number, position):
 
     # Check row
@@ -110,6 +133,7 @@ def valid(board, number, position):
     
     return True
 
+# Prints the internal sudoku board to console
 def print_board(board):
 
     for i in range(len(board)):
@@ -125,6 +149,8 @@ def print_board(board):
             else: 
                 print(str(board[i][j]) + " ", end="")
 
+# Find an empty cell in the internal sudoku board
+# and returns the array index as a tuple
 def find_empty(board):
     for i in range(len(board)):
         for j in range(len(board[0])):
@@ -133,11 +159,36 @@ def find_empty(board):
     return None
 
 def main():
-    pag.click(topLeftX, topLeftY)
-    print_board(board)
-    solve(board)
-    print("")
-    print_board(board)
-    fillWebCells(board)
+    # Initalise empty internal sudoku board.
+    board = [
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0]
+    ]
+    
+    for it in range(1,100):
+        readInSudoku(board)
+        pag.click(topLeftX, topLeftY)
+        print_board(board)
+        solve(board)
+        print("")
+        print('Solved')
+        print_board(board)
+        print("")
+        fillWebCells(board)
+        finishSudoku()
+        time.sleep(2)
+        newSudoku()
+        board = clearBoard(board)
+        pag.click(botRightX, botRightY)
+
 
 main()
+
+2
